@@ -1,10 +1,29 @@
-import numpy as np
+## Sentiment Analysis with news from FinViz
+import requests
+from bs4 import BeautifulSoup
+import os
 import pandas as pd
-from textblob import TextBlob
-import re
-from varderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, classification_report
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+import matplotlib.pyplot as plt
+# NLTK VADER for sentiment analysis
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+
+finviz_url = 'https://finviz.com/quote.ashx?t='
+
+news_tables = {}
+
+# Get company from user
+ticker = input("Please enter company's ticker symbol: ")
+
+url = finviz_url + ticker 
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Safari/537.36',
+}
+response = requests.get(url, headers=HEADERS)
+html = BeautifulSoup(response.text)
+news_table = html.find(id='news-table')
+news_tables[ticker] = news_table
+
+
+
 
 
