@@ -21,21 +21,56 @@ HEADERS = {
 response = requests.get(url, headers=HEADERS)
 html = BeautifulSoup(response.text, features="html.parser")
 
-def print_Headlines(coy_tr):
+def loadNews(ticker, coy_tr, news):
     for index, table_row in enumerate(coy_tr):
-        headlines = table_row.a.text
-        datetime = table_row.td.text
-        print(headlines)
-        print(datetime)
-        
-        # Print out the 4 latest news articles
-        if index == 4:
-            break
 
+        # Headlines are found html <a> tag
+        headlines = table_row.a.text
+
+        # Datetime are found under html <td> tag
+        datetime = table_row.td.text
+        date_scrape = datetime.split()
+
+        # If date_scrape is of length 1, it only has the information regarding time.
+        if (len(date_scrape) == 1):
+            time = date_scrape[0]
+
+        elif (len(date_scrape) == 2):
+            date = date_scrape[0]
+            time = date_scrape[1]
+
+        news.append([date, time, headlines])
+       
+        # Print out the last 4 news articles that were published
+        if index < 4:
+            print(headlines)
+            print(datetime)
+        
+        
+
+# News are found under the id: news-table
 news_table = html.find(id='news-table')
-coy_tr = news_table.findAll('tr')
 # news_tables[ticker] = news_table
 # company = news_tables[ticker]
+coy_tr = news_table.findAll('tr')
+
+parsed_news = []
+loadNews(ticker, coy_tr, parsed_news)
+
+vader = SentimentIntensityAnalyzer()
+columns = ['Date', 'Time', 'Headline']
+
+# Convert parsed_news into a Pandas Dataframe
+df = pd.DataFrame(parsed_news, columns=columns)
+scores = df['Headline'].apply(vader.polarity_scores).tolist()
+scores_df = pd.DataFrame(scores)
+newsAndScores_df = df.join(scores_df)
+
+# Group data by dates and calculate the mean score of each day
+mean_scores = newsAndScores_df.groupby(['Date']).mean()
+print(mean_scores)
+mean_scores = mean_scores.unstack()
+print(mean_scores)
 
 
 
