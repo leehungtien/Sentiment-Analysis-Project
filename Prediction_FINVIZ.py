@@ -1,4 +1,5 @@
 ## Sentiment Analysis with news from FinViz
+from numpy.core.fromnumeric import mean
 import requests
 from bs4 import BeautifulSoup
 import os
@@ -68,9 +69,12 @@ newsAndScores_df = df.join(scores_df)
 
 # Group data by dates and calculate the mean score of each day
 mean_scores = newsAndScores_df.groupby(['Date']).mean()
-print(mean_scores)
-mean_scores = mean_scores.unstack()
-print(mean_scores)
+
+mean_scores = mean_scores.xs('compound', axis='columns').transpose()
+
+mean_scores.plot(kind='bar')
+plt.grid()
+plt.show()
 
 
 
