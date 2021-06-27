@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.core.fromnumeric import size
 import pandas as pd
 from nltk.corpus import stopwords
 import re
@@ -7,6 +8,12 @@ from nltk.tokenize import word_tokenize
 from nltk.stem.wordnet import WordNetLemmatizer
 from sklearn.model_selection import train_test_split
 import gensim
+
+from keras_preprocessing.text import Tokenizer
+from keras_preprocessing.sequence import pad_sequences
+from keras.models import Sequential
+from keras.layers import Dense, Embedding, LSTM, Dropout
+from keras.utils.np_utils import to_categorical
 
 import nltk
 # nltk.download('punkt')
@@ -69,3 +76,26 @@ tweets['text'] = tweets['text'].map(lambda x: ' '.join(x))
 X_train, X_test, y_train, y_test = train_test_split(tweets, target, test_size=0.2, random_state=42)
 print(f'Size of training set: {len(X_train)}')
 print(f'Size of testing set: {len(X_test)}')
+
+W2V_SIZE = 300
+W2V_WINDOW = 7
+W2V_EPOCH = 32
+W2V_MIN_COUNT = 10
+
+documents = [info.split() for info in X_train.text]
+w2v_model = gensim.models.word2vec.Word2Vec(size=W2V_SIZE,
+                                            window=W2V_WINDOW,
+                                            min_count=W2V_MIN_COUNT,
+                                            workers=8)
+
+# Train W2V model
+w2v_model.train(documents, total_examples=len(documents), epochs=W2V_EPOCH)
+
+# Test model
+print(w2v_model.wv.most_similar("hate"))
+
+
+
+
+
+
