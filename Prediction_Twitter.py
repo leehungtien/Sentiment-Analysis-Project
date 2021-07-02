@@ -1,3 +1,4 @@
+from gensim.models import VocabTransform
 import numpy as np
 from numpy.core.fromnumeric import size
 import pandas as pd
@@ -8,6 +9,7 @@ from nltk.tokenize import word_tokenize
 from nltk.stem.wordnet import WordNetLemmatizer
 from sklearn.model_selection import train_test_split
 import gensim
+import pickle
 
 from keras_preprocessing.text import Tokenizer
 from keras_preprocessing.sequence import pad_sequences
@@ -83,10 +85,15 @@ W2V_EPOCH = 32
 W2V_MIN_COUNT = 10
 
 documents = [info.split() for info in X_train.text]
-w2v_model = gensim.models.word2vec.Word2Vec(size=W2V_SIZE,
-                                            window=W2V_WINDOW,
-                                            min_count=W2V_MIN_COUNT,
+w2v_model = gensim.models.word2vec.Word2Vec(vector_size=W2V_SIZE, 
+                                            window=W2V_WINDOW, 
+                                            min_count=W2V_MIN_COUNT, 
                                             workers=8)
+
+w2v_model.build_vocab(documents)
+words = w2v_model.wv.key_to_index
+vocab_size = len(words)
+print(f'Vocab_size: {vocab_size}')
 
 # Train W2V model
 w2v_model.train(documents, total_examples=len(documents), epochs=W2V_EPOCH)
@@ -94,8 +101,26 @@ w2v_model.train(documents, total_examples=len(documents), epochs=W2V_EPOCH)
 # Test model
 print(w2v_model.wv.most_similar("hate"))
 
+MAX_SEQ_LEN = 300
+EMBEDDING_DIM = 300
 
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts(X_train.text)
+word_index = tokenizer.word_index
+vocab_size = len(word_index)
+print(f'Found {vocab_size} unique tokens')
 
+# Convert data to padded sequences
+X_train_padded = tokenizer.texts_to_sequences(X_train.text)
+X_train_padded = pad_sequences(X_train_padded, maxlen=MAX_SEQ_LEN)
+print(f'Shape of data tensor: {X_train_padded.shape}')
 
+with open('tokenizer.pickle', 'wb') as handle:
+    pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+embedding_matrix = np.zeros((vocab_size + 1, W2V_SIZE))
+for word, i in tokenizer.word_index.items():
+    if word in w2v_model.wv:
+        embedding_matrix[i] = w2v_model.wv[word]
+print(embedding_matrix.shape)
 
