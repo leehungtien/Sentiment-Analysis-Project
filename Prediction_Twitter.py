@@ -1,10 +1,10 @@
-from gensim.models import VocabTransform
 import numpy as np
 from numpy.core.fromnumeric import size
 import pandas as pd
 from nltk.corpus import stopwords
 import re
 import string
+import matplotlib.pyplot as plt
 from nltk.tokenize import word_tokenize
 from nltk.stem.wordnet import WordNetLemmatizer
 from sklearn.model_selection import train_test_split
@@ -16,8 +16,12 @@ from keras_preprocessing.sequence import pad_sequences
 from keras.models import Sequential
 from keras.layers import Dense, Embedding, LSTM, Dropout
 from keras.utils.np_utils import to_categorical
+import keras
+from keras.callbacks import ReduceLROnPlateau, EarlyStopping
+from keras.models import load_model
 
 import nltk
+from tensorflow.keras import callbacks
 # nltk.download('punkt')
 # nltk.download('stopwords')
 # nltk.download('wordnet')
@@ -124,3 +128,49 @@ for word, i in tokenizer.word_index.items():
         embedding_matrix[i] = w2v_model.wv[word]
 print(embedding_matrix.shape)
 
+model = Sequential()
+
+# Add an embedding layer to map one-hot encoded categorical variables to vectors
+model.add(Embedding(vocab_size + 1, W2V_SIZE, weights=[embedding_matrix], input_length=MAX_SEQ_LEN, trainable=False))
+
+# Used to prevent over-fitting 
+model.add(Dropout(0.5))
+model.add(LSTM(100, dropout=0.2, recurrent_dropout=0.2))
+model.add(Dense(1, activation='sigmoid'))
+
+model.summary()
+
+model.compile(loss='binary_crossentropy', optimizer="adam", metrics=['accuracy'])
+
+callbacks = [ReduceLROnPlateau(monitor='val_loss', patience=5, cooldown=0),
+            EarlyStopping(monitor='val_acc', min_delta=1e-4, patience=5)]
+
+# Reduced batch size to use less memory
+history = model.fit(X_train_padded, y_train,
+                    batch_size=128,
+                    epochs=5,
+                    validation_split=0.1,
+                    verbose=1,
+                    callbacks=callbacks)
+
+model.save('main/Sentiment_LSTM_model.h5')
+with open('main/trainHistoryDict', 'wb') as file_pi:
+    pickle.dump(history.history, file_pi)
+
+# Load model
+model = load_model('main/Sentiment_LSTM_model.h5')
+
+# Load tokenizer
+with open('main/trainHistoryDict', 'rb') as file_pi:
+    history = pickle.load(file_pi)
+
+X_test_padded = tokenizer.texts_to_sequences(X_test.test)
+X_test_padded = pad_sequences(X_test_padded, maxlen=MAX_SEQ_LEN)
+score = model.evaluate(X_test_padded, y_test, batch_size=512)
+print("ACCURACY: ", score[1])
+print("LOSS: ", score[0])
+
+acc = history.history['acc']
+val_acc = history.history['val_acc']
+loss = history.history['loss']
+val_loss = history
