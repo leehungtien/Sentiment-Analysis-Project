@@ -1,4 +1,4 @@
-# Sentiment-Analysis-Project
+# Sentiment-Analysis-Project (Work-in-progress)
 
 Analyse news reporting on stocks and deduce if the article has a positive or negative connotation.
 
