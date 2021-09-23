@@ -134,7 +134,7 @@ model = Sequential()
 model.add(Embedding(vocab_size + 1, W2V_SIZE, weights=[embedding_matrix], input_length=MAX_SEQ_LEN, trainable=False))
 
 # Used to prevent over-fitting 
-model.add(Dropout(0.5))
+model.add(Dropout(0.6))
 model.add(LSTM(100, dropout=0.2, recurrent_dropout=0.2))
 model.add(Dense(1, activation='sigmoid'))
 
@@ -147,8 +147,8 @@ callbacks = [ReduceLROnPlateau(monitor='val_loss', patience=5, cooldown=0),
 
 # Reduced batch size to use less memory
 history = model.fit(X_train_padded, y_train,
-                    batch_size=128,
-                    epochs=5,
+                    batch_size=64,
+                    epochs=3,
                     validation_split=0.1,
                     verbose=1,
                     callbacks=callbacks)
