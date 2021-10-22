@@ -147,7 +147,7 @@ callbacks = [ReduceLROnPlateau(monitor='val_loss', patience=5, cooldown=0),
 
 # Reduced batch size to use less memory
 history = model.fit(X_train_padded, y_train,
-                    batch_size=64,
+                    batch_size=32,
                     epochs=3,
                     validation_split=0.1,
                     verbose=1,
